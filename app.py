@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import psycopg2
 import os
 from dotenv import load_dotenv
+import random
 
 # Load environment variables from .env file
 load_dotenv()
@@ -72,6 +73,10 @@ def get_people():
         ''')
         columns = [desc[0] for desc in cur.description]
         people = [dict(zip(columns, row)) for row in cur.fetchall()]
+        # Add random 'class' to each person
+        class_choices = ['cp1', 'cp2', 'cp3']
+        for person in people:
+            person['class'] = random.choice(class_choices)
         cur.close()
         conn.close()
         return jsonify({
