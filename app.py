@@ -19,7 +19,7 @@ DB_PASS = os.environ.get('DB_PASS') or os.environ.get('DATABASE_PASSWORD', 'HPrp
 def test_database_connection():
     """Test if we can connect to the database"""
     try:
-        conn = psycopg2.connect(
+        conn =  psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
             dbname=DB_NAME,
