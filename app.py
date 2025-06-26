@@ -559,6 +559,51 @@ def debug_info():
         'all_env_vars': {k: v for k, v in os.environ.items() if 'DB' in k or 'DATABASE' in k or 'PORT' in k}
     }), 200
 
+@app.route('/<class_name>', methods=['GET'])
+def get_students_by_class_db(class_name):
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS
+        )
+        cur = conn.cursor()
+        # Get class_id for the given class_name
+        cur.execute('SELECT class_id FROM classes WHERE class_name = %s', (class_name,))
+        class_row = cur.fetchone()
+        if not class_row:
+            cur.close()
+            conn.close()
+            return jsonify({'error': f'Class {class_name} not found'}), 404
+        class_id = class_row[0]
+        # Get all people in this class
+        cur.execute('''
+            SELECT p.id, p.first_name, p.last_name, p.email, g.gender_name, 
+                   p.contact, p.mother_name, p.created_at, c.class_name
+            FROM people p
+            LEFT JOIN gender g ON p.gender_id = g.gender_id
+            JOIN classes c ON p.class_id = c.class_id
+            WHERE p.class_id = %s
+            ORDER BY p.id
+        ''', (class_id,))
+        columns = [desc[0] for desc in cur.description]
+        students = [dict(zip(columns, row)) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return jsonify({
+            'class': class_name,
+            'students': students,
+            'count': len(students),
+            'message': f'Successfully retrieved {len(students)} students in class {class_name}'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'message': f'Failed to retrieve students for class {class_name}'
+        }), 500
+
 if __name__ == '__main__':
     print("Starting Flask app...")
     print("Available endpoints:")
